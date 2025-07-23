@@ -27,6 +27,13 @@
 
 #include <epicsExport.h>
 
+#include <fstream>
+#include <string>
+
+#ifdef HAVE_UTAG
+#define ISIS_CUSTOM_ALARM_MSG
+#endif
+
 #ifdef EPICS_VERSION_INT
 #  if EPICS_VERSION_INT>=VERSION_INT(3,16,1,0)
 #    define USE_INT64
@@ -344,18 +351,32 @@ void attachAll(PVX& pvm, const pvd::PVStructurePtr& pv)
 }
 
 template<typename Meta>
+#ifdef ISIS_CUSTOM_ALARM_MSG
+void mapStatus(const Meta& meta, pvd::PVInt* status, pvd::PVString* message, dbChannel *chan)
+#else
 void mapStatus(const Meta& meta, pvd::PVInt* status, pvd::PVString* message)
+#endif
 {
+#ifdef ISIS_CUSTOM_ALARM_MSG
+    pdbRecordIterator info(chan);
+    const char *userMsg = info.info("q:alarm:user_message");
+#endif
 #ifdef HAVE_UTAG
     if(meta.amsg[0]!='\0') {
         message->put(meta.amsg);
     } else
 #endif
+#ifdef ISIS_CUSTOM_ALARM_MSG
+    if(userMsg != NULL && meta.status > NO_ALARM) {
+        message->put(userMsg);
+    } else 
+#endif    
+    {
     if(meta.status<ALARM_NSTATUS)
         message->put(epicsAlarmConditionStrings[meta.status]);
     else
         message->put("???");
-
+    }
     // Arbitrary mapping from DB status codes
     unsigned out;
     switch(meta.status) {
@@ -425,7 +446,11 @@ void putTime(const pvTimeAlarm& pv, unsigned dbe, db_field_log *pfl)
 
     putMetaImpl(pv, meta);
     if(dbe&DBE_ALARM) {
+        #ifdef ISIS_CUSTOM_ALARM_MSG
+        mapStatus(meta, pv.status.get(), pv.message.get(), pv.chan);
+        #else
         mapStatus(meta, pv.status.get(), pv.message.get());
+        #endif
         pv.severity->put(meta.severity);
     }
 }
@@ -571,7 +596,11 @@ void putMeta(const pvCommon& pv, unsigned dbe, db_field_log *pfl)
     putMetaImpl(pv, meta);
 #define FMAP(MNAME, FNAME) pv.MNAME->put(meta.FNAME)
     if(dbe&DBE_ALARM) {
+        #ifdef ISIS_CUSTOM_ALARM_MSG
+        mapStatus(meta, pv.status.get(), pv.message.get(), pv.chan);
+        #else
         mapStatus(meta, pv.status.get(), pv.message.get());
+        #endif
         FMAP(severity, severity);
     }
     if(dbe&DBE_PROPERTY) {

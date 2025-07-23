@@ -1,0 +1,10 @@
+record(ai, "custom:ai") {
+    field(DESC, "Custom Analog Input for Alarm Test")
+    field(DTYP, "Soft Channel")
+    field(SCAN, "Passive")
+    field(HIHI, "50.0")
+    field(HIGH, "40.0")
+    field(HHSV, "MAJOR")
+    field(HSV, "MINOR")
+    info(q:alarm:user_message, "Custom Msg Alarm AI!")
+}

@@ -20,6 +20,11 @@
 #include "pvif.h"
 #include "utilities.h"
 
+
+#ifdef HAVE_UTAG
+#define ISIS_CUSTOM_ALARM_MSG
+#endif
+
 namespace pvd = epics::pvData;
 
 extern "C"
@@ -637,12 +642,70 @@ void testFilters()
     testFieldEqual<pvd::PVShortArray>(root, "dut.value", expected);
 #endif // >= 7.0
 }
+#ifdef ISIS_CUSTOM_ALARM_MSG
+void testCustomAlarmMessage()
+{
+    testDiag("testCustomAlarmMessage");
 
+    TestIOC IOC;
+
+    testdbReadDatabase("p2pTestIoc.dbd", NULL, NULL);
+    p2pTestIoc_registerRecordDeviceDriver(pdbbase);
+    testdbReadDatabase("test_custom_alarm.db", NULL, NULL);
+
+    aiRecord *prec_custom_ai = (aiRecord*)testdbRecordPtr("custom:ai");
+    testTrue(prec_custom_ai != NULL);
+
+    IOC.init();
+
+    DBCH chan_ai("custom:ai");
+
+    pvd::PVStructurePtr root;
+    p2p::auto_ptr<PVIF> pvif_ai;
+    {
+        ScalarBuilder builder_ai(chan_ai);
+
+        pvd::StructureConstPtr dtype_root(pvd::getFieldCreate()->createFieldBuilder()
+                                          ->add("custom_ai", builder_ai.dtype())
+                                          ->createStructure());
+
+        root = pvd::getPVDataCreate()->createPVStructure(dtype_root);
+        pvif_ai.reset(builder_ai.attach(root, FieldName("custom_ai")));
+    }
+
+    pvd::BitSet mask;
+
+    dbScanLock((dbCommon*)prec_custom_ai);
+    prec_custom_ai->val = 55.0;
+    dbProcess((dbCommon*)prec_custom_ai);
+    dbScanUnlock((dbCommon*)prec_custom_ai);
+
+    pvif_ai->put(mask, DBE_ALARM|DBE_PROPERTY, NULL);
+
+    testFieldEqual<pvd::PVString>(root, "custom_ai.alarm.message", "Custom Msg Alarm AI!");
+    testFieldEqual<pvd::PVInt>(root, "custom_ai.alarm.severity", 2);
+    testFieldEqual<pvd::PVInt>(root, "custom_ai.alarm.status", 1);
+
+    dbScanLock((dbCommon*)prec_custom_ai);
+    prec_custom_ai->val = 25.0;
+    dbProcess((dbCommon*)prec_custom_ai);
+    dbScanUnlock((dbCommon*)prec_custom_ai);
+    pvif_ai->put(mask, DBE_ALARM|DBE_PROPERTY, NULL);
+
+    testFieldEqual<pvd::PVString>(root, "custom_ai.alarm.message", "NO_ALARM");
+    testFieldEqual<pvd::PVInt>(root, "custom_ai.alarm.severity", 0);
+    testFieldEqual<pvd::PVInt>(root, "custom_ai.alarm.status", 0);
+}
+#endif // ISIS_CUSTOM_ALARM_MSG
 } // namespace
 
 MAIN(testpvif)
 {
+#ifdef ISIS_CUSTOM_ALARM_MSG
+    testPlan(105);
+#else
     testPlan(98);
+#endif    
 #ifdef USE_INT64
     testDiag("Testing of 64-bit field access");
 #else
@@ -651,5 +714,8 @@ MAIN(testpvif)
     testScalar();
     testPlain();
     testFilters();
+#ifdef ISIS_CUSTOM_ALARM_MSG
+    testCustomAlarmMessage();
+#endif
     return testDone();
 }
