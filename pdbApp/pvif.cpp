@@ -27,9 +27,6 @@
 
 #include <epicsExport.h>
 
-#include <fstream>
-#include <string>
-
 #ifdef HAVE_UTAG
 #define ISIS_CUSTOM_ALARM_MSG
 #endif
