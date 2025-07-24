@@ -11,8 +11,10 @@ cache:
 #---------------------------------#
 
 install:
-# for the sequencer
-  - cinst re2c
+  - ps: Set-ExecutionPolicy Bypass -Scope Process -Force
+  - ps: [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+  - ps: iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+  - choco install re2c -y
   - cmd: git submodule update --init --recursive
 
 #---------------------------------#
