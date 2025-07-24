@@ -22,7 +22,7 @@
 
 
 #ifdef HAVE_UTAG
-#define ISIS_CUSTOM_ALARM_MSG
+#define CUSTOM_ALARM_MSG
 #endif
 
 namespace pvd = epics::pvData;
@@ -642,7 +642,7 @@ void testFilters()
     testFieldEqual<pvd::PVShortArray>(root, "dut.value", expected);
 #endif // >= 7.0
 }
-#ifdef ISIS_CUSTOM_ALARM_MSG
+#ifdef CUSTOM_ALARM_MSG
 void testCustomAlarmMessage()
 {
     testDiag("testCustomAlarmMessage");
@@ -696,12 +696,12 @@ void testCustomAlarmMessage()
     testFieldEqual<pvd::PVInt>(root, "custom_ai.alarm.severity", 0);
     testFieldEqual<pvd::PVInt>(root, "custom_ai.alarm.status", 0);
 }
-#endif // ISIS_CUSTOM_ALARM_MSG
+#endif // CUSTOM_ALARM_MSG
 } // namespace
 
 MAIN(testpvif)
 {
-#ifdef ISIS_CUSTOM_ALARM_MSG
+#ifdef CUSTOM_ALARM_MSG
     testPlan(105);
 #else
     testPlan(98);
@@ -714,7 +714,7 @@ MAIN(testpvif)
     testScalar();
     testPlain();
     testFilters();
-#ifdef ISIS_CUSTOM_ALARM_MSG
+#ifdef CUSTOM_ALARM_MSG
     testCustomAlarmMessage();
 #endif
     return testDone();

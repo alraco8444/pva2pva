@@ -28,7 +28,7 @@
 #include <epicsExport.h>
 
 #ifdef HAVE_UTAG
-#define ISIS_CUSTOM_ALARM_MSG
+#define CUSTOM_ALARM_MSG
 #endif
 
 #ifdef EPICS_VERSION_INT
@@ -348,22 +348,22 @@ void attachAll(PVX& pvm, const pvd::PVStructurePtr& pv)
 }
 
 template<typename Meta>
-#ifdef ISIS_CUSTOM_ALARM_MSG
+#ifdef CUSTOM_ALARM_MSG
 void mapStatus(const Meta& meta, pvd::PVInt* status, pvd::PVString* message, dbChannel *chan)
 #else
 void mapStatus(const Meta& meta, pvd::PVInt* status, pvd::PVString* message)
 #endif
 {
-#ifdef ISIS_CUSTOM_ALARM_MSG
+#ifdef CUSTOM_ALARM_MSG
     pdbRecordIterator info(chan);
-    const char *userMsg = info.info("q:alarm:user_message");
+    const char *userMsg = info.info("Q:alarm:msg");
 #endif
 #ifdef HAVE_UTAG
     if(meta.amsg[0]!='\0') {
         message->put(meta.amsg);
     } else
 #endif
-#ifdef ISIS_CUSTOM_ALARM_MSG
+#ifdef CUSTOM_ALARM_MSG
     if(userMsg != NULL && meta.status > NO_ALARM) {
         message->put(userMsg);
     } else 
@@ -443,7 +443,7 @@ void putTime(const pvTimeAlarm& pv, unsigned dbe, db_field_log *pfl)
 
     putMetaImpl(pv, meta);
     if(dbe&DBE_ALARM) {
-        #ifdef ISIS_CUSTOM_ALARM_MSG
+        #ifdef CUSTOM_ALARM_MSG
         mapStatus(meta, pv.status.get(), pv.message.get(), pv.chan);
         #else
         mapStatus(meta, pv.status.get(), pv.message.get());
@@ -593,7 +593,7 @@ void putMeta(const pvCommon& pv, unsigned dbe, db_field_log *pfl)
     putMetaImpl(pv, meta);
 #define FMAP(MNAME, FNAME) pv.MNAME->put(meta.FNAME)
     if(dbe&DBE_ALARM) {
-        #ifdef ISIS_CUSTOM_ALARM_MSG
+        #ifdef CUSTOM_ALARM_MSG
         mapStatus(meta, pv.status.get(), pv.message.get(), pv.chan);
         #else
         mapStatus(meta, pv.status.get(), pv.message.get());

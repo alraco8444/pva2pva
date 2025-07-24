@@ -6,5 +6,5 @@ record(ai, "custom:ai") {
     field(HIGH, "40.0")
     field(HHSV, "MAJOR")
     field(HSV, "MINOR")
-    info(q:alarm:user_message, "Custom Msg Alarm AI!")
+    info(Q:alarm:msg, "Custom Msg Alarm AI!")
 }
