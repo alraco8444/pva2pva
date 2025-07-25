@@ -17,19 +17,7 @@ install:
   - choco install re2c -y
   - cmd: git submodule update --init --recursive
   - cmd: pip install setuptools
- # .ci/cue.py 존재 확인, 없으면 강제 fetch & 오류 메시지
-  - cmd: |
-      if not exist .ci\cue.py (
-        echo ERROR: .ci\cue.py not found! Please check that .ci submodule is correctly initialized.
-        git submodule deinit -f .ci
-        git submodule update --init --recursive
-        if not exist .ci\cue.py (
-          echo FATAL: .ci/cue.py is STILL missing after submodule update! Failing build.
-          exit /b 2
-        )
-      ) else (
-        echo Found .ci\cue.py
-      )
+
 
 #---------------------------------#
 #       repository cloning        #
