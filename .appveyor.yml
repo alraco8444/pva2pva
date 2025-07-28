@@ -11,14 +11,15 @@ cache:
 #---------------------------------#
 
 install:
-  - choco install python --version=3.10.9 -y
+
+  - powershell -Command "Invoke-WebRequest https://www.python.org/ftp/python/3.10.9/python-3.10.9-amd64.exe -OutFile python-install.exe"
+  - start /wait python-install.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0
   - refreshenv
-  - python -m ensurepip --upgrade
   - python -m pip install --upgrade pip setuptools
 
-  # for the sequencer
+  # For the sequencer
   - choco install re2c -y
-  - cmd: git submodule update --init --recursive
+  - git submodule update --init --recursive
 
 #---------------------------------#
 #       repository cloning        #
