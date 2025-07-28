@@ -11,8 +11,13 @@ cache:
 #---------------------------------#
 
 install:
-# for the sequencer
-  - choco install re2c
+  - choco install python --version=3.10.9 -y
+  - refreshenv
+  - python -m ensurepip --upgrade
+  - python -m pip install --upgrade pip setuptools
+
+  # for the sequencer
+  - choco install re2c -y
   - cmd: git submodule update --init --recursive
 
 #---------------------------------#
