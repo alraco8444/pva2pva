@@ -27,6 +27,12 @@
 
 #include <epicsExport.h>
 
+#include <fstream>
+#include <string>
+#ifdef HAVE_UTAG
+#define ENUM_TYPE_DESC
+#endif
+
 #ifdef EPICS_VERSION_INT
 #  if EPICS_VERSION_INT>=VERSION_INT(3,16,1,0)
 #    define USE_INT64
@@ -190,6 +196,9 @@ struct pvCommon : public pvTimeAlarm {
 
     pvd::PVDoublePtr displayLow, displayHigh, controlLow, controlHigh;
     pvd::PVStringPtr egu, desc;
+#ifdef ENUM_TYPE_DESC
+    pvd::PVStringPtr descriptor;
+#endif    
     pvd::PVIntPtr fmt, prec;
 
     pvd::PVScalarPtr warnLow, warnHigh, alarmLow, alarmHigh;
@@ -324,6 +333,9 @@ void attachMeta(pvCommon& pvm, const pvd::PVStructurePtr& pv)
     FMAP(alarmHigh, PVScalar, "valueAlarm.highAlarmLimit", PROPERTY);
     FMAP(alarmLow,  PVScalar, "valueAlarm.lowAlarmLimit", PROPERTY);
     FMAP(enumopts,  PVStringArray, "value.choices", PROPERTY);
+#ifdef ENUM_TYPE_DESC
+    FMAP(descriptor, PVString, "descriptor", PROPERTY);
+#endif    
 #undef FMAP
 }
 
@@ -577,6 +589,9 @@ void putMeta(const pvCommon& pv, unsigned dbe, db_field_log *pfl)
     if(dbe&DBE_PROPERTY) {
 #undef FMAP
         if(pv.desc) pv.desc->put(prec->desc);
+#ifdef ENUM_TYPE_DESC       
+        if(pv.descriptor) pv.descriptor->put(prec->desc);        
+#endif        
 #define FMAP(MASK, MNAME, FNAME) if(META::mask&(MASK) && pv.MNAME) pv.MNAME->put(meta.FNAME)
         FMAP(DBR_GR_DOUBLE, displayHigh, upper_disp_limit);
         FMAP(DBR_GR_DOUBLE, displayLow, lower_disp_limit);
@@ -708,7 +723,7 @@ struct PVIFScalarNumeric : public PVIF
         pdbRecordIterator info(chan);
         findNSMask(pvmeta, info, pvalue);
         findFormat(pvmeta, info, pvalue);
-    }
+     }
     virtual ~PVIFScalarNumeric() {}
 
     virtual void put(epics::pvData::BitSet& mask, unsigned dbe, db_field_log *pfl) OVERRIDE FINAL
@@ -863,7 +878,11 @@ ScalarBuilder::dtype()
         if(dbr!=DBR_STRING)
             builder = builder->add("valueAlarm", standard->doubleAlarm());
     }
-
+#ifdef ENUM_TYPE_DESC
+    else{
+        builder = builder->add("descriptor", pvd::pvString);
+    }
+#endif
     return builder->createStructure();
 }
 

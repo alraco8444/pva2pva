@@ -20,6 +20,15 @@
 #include "pvif.h"
 #include "utilities.h"
 
+#ifdef HAVE_UTAG
+#define ENUM_TYPE_DESC
+#endif
+
+#ifdef ENUM_TYPE_DESC
+#include <biRecord.h>
+#include <boRecord.h>
+#endif
+
 namespace pvd = epics::pvData;
 
 extern "C"
@@ -315,7 +324,11 @@ void testScalar()
               .set(OFF("mbbi.alarm.message"))
               .set(OFF("mbbi.timeStamp.secondsPastEpoch"))
               .set(OFF("mbbi.timeStamp.nanoseconds"))
-              .set(OFF("mbbi.timeStamp.userTag")))
+              .set(OFF("mbbi.timeStamp.userTag"))
+#ifdef ENUM_TYPE_DESC
+              .set(OFF("mbbi.descriptor"))
+#endif
+            )
             <<" mbbi changes\n"<<root->stream().show(mask);
 #undef OFF
     mask.clear();
@@ -638,11 +651,83 @@ void testFilters()
 #endif // >= 7.0
 }
 
+#ifdef ENUM_TYPE_DESC
+void testEnumTypeDesc()
+{
+    testDiag("testEnumTypeDesc");
+
+    TestIOC IOC;
+
+    testdbReadDatabase("p2pTestIoc.dbd", NULL, NULL);
+    p2pTestIoc_registerRecordDeviceDriver(pdbbase);
+    testdbReadDatabase("test_enum_desc.db", NULL, NULL);
+
+    biRecord *prec_bi = (biRecord*)testdbRecordPtr("test:bi");
+    boRecord *prec_bo = (boRecord*)testdbRecordPtr("test:bo");
+    mbbiRecord *prec_mbbi = (mbbiRecord*)testdbRecordPtr("test:mbbi");
+
+    IOC.init();
+
+    DBCH chan_bi("test:bi");
+    DBCH chan_bo("test:bo");
+    DBCH chan_mbbi("test:mbbi");
+
+    pvd::PVStructurePtr root;
+    p2p::auto_ptr<PVIF> pvif_bi;
+    p2p::auto_ptr<PVIF> pvif_bo;
+    p2p::auto_ptr<PVIF> pvif_mbbi;
+    {
+        ScalarBuilder builder_bi(chan_bi);
+        ScalarBuilder builder_bo(chan_bo);
+        ScalarBuilder builder_mbbi(chan_mbbi);
+        pvd::FieldConstPtr dtype_bi(builder_bi.dtype());
+        pvd::FieldConstPtr dtype_bo(builder_bo.dtype());
+        pvd::FieldConstPtr dtype_mbbi(builder_mbbi.dtype());
+        pvd::StructureConstPtr dtype_root(pvd::getFieldCreate()->createFieldBuilder()
+                                          ->add("test_bi", dtype_bi)
+                                          ->add("test_bo", dtype_bo)
+                                          ->add("test_mbbi", dtype_mbbi)
+                                          ->createStructure());
+
+        root = pvd::getPVDataCreate()->createPVStructure(dtype_root);
+
+        pvif_bi.reset(builder_bi.attach(root, FieldName("test_bi")));
+        pvif_bo.reset(builder_bo.attach(root, FieldName("test_bo")));
+        pvif_mbbi.reset(builder_mbbi.attach(root, FieldName("test_mbbi")));
+    }
+
+    pvd::BitSet mask;
+
+    dbScanLock((dbCommon*)prec_bi);
+    pvif_bi->put(mask, DBE_VALUE|DBE_ALARM|DBE_PROPERTY, NULL);
+    dbScanUnlock((dbCommon*)prec_bi);
+
+    dbScanLock((dbCommon*)prec_bo);
+    pvif_bo->put(mask, DBE_VALUE|DBE_ALARM|DBE_PROPERTY, NULL);
+    dbScanUnlock((dbCommon*)prec_bo);
+
+    dbScanLock((dbCommon*)prec_mbbi);
+    pvif_mbbi->put(mask, DBE_VALUE|DBE_ALARM|DBE_PROPERTY, NULL);
+    dbScanUnlock((dbCommon*)prec_mbbi);
+
+    testFieldEqual<pvd::PVString>(root, "test_bi.descriptor", "Descriptor for Binary Input");
+    testFieldEqual<pvd::PVString>(root, "test_bo.descriptor", "Descriptor for Binary Output");
+    testFieldEqual<pvd::PVString>(root, "test_mbbi.descriptor", "Descriptor for Multi-Bit Binary Input");
+}
+#endif // ENUM_TYPE_DESC
 } // namespace
 
 MAIN(testpvif)
 {
+#if defined(CUSTOM_ALARM_MSG) && defined(ENUM_TYPE_DESC)
+    testPlan(108);
+#elif defined(CUSTOM_ALARM_MSG) && !defined(ENUM_TYPE_DESC)
+    testPlan(105);
+#elif !defined(CUSTOM_ALARM_MSG) && defined(ENUM_TYPE_DESC)
+    testPlan(101);
+#else
     testPlan(98);
+#endif    
 #ifdef USE_INT64
     testDiag("Testing of 64-bit field access");
 #else
@@ -651,5 +736,8 @@ MAIN(testpvif)
     testScalar();
     testPlain();
     testFilters();
+#ifdef ENUM_TYPE_DESC
+    testEnumTypeDesc();
+#endif // ENUM_TYPE_DESC
     return testDone();
 }

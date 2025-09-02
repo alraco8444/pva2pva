@@ -1,0 +1,17 @@
+record(bi, "test:bi") {
+    field(DESC, "Descriptor for Binary Input")
+    field(DTYP, "Soft Channel")
+    field(SCAN, "Passive")
+}
+
+record(bo, "test:bo") {
+    field(DESC, "Descriptor for Binary Output")
+    field(DTYP, "Soft Channel")
+    field(SCAN, "Passive")
+}
+
+record(mbbi, "test:mbbi") {
+    field(DESC, "Descriptor for Multi-Bit Binary Input")
+    field(DTYP, "Soft Channel")
+    field(SCAN, "Passive")
+}
